@@ -132,7 +132,7 @@ class T12DetailFormatter(T12ReportFormatter):
         """Bold specific total rows by searching for text"""
         bold_font = Font(bold=True)
         
-        # Define the same rows that should be bolded as Summary
+        # Define the exact rows that should be bolded (same as Summary)
         rows_to_bold = [
             "Net Rental Income",
             "Total Income",
@@ -146,16 +146,14 @@ class T12DetailFormatter(T12ReportFormatter):
         for row in range(1, self.ws.max_row + 1):
             cell_value = self.ws[f"A{row}"].value
             if cell_value:
-                # Strip whitespace but keep the text as-is for comparison
+                # Strip all leading/trailing whitespace for comparison
                 cell_text = str(cell_value).strip()
                 
-                # Check if this row should be bolded
-                for target_text in rows_to_bold:
-                    if cell_text == target_text or cell_text.endswith(target_text):
-                        # Bold the entire row
-                        for col in range(1, 15):
-                            self.ws.cell(row=row, column=col).font = bold_font
-                        break
+                # Check if this row should be bolded - must be exact match
+                if cell_text in rows_to_bold:
+                    # Bold the entire row
+                    for col in range(1, 15):
+                        self.ws.cell(row=row, column=col).font = bold_font
     
     def _get_report_type_suffix(self):
         return "T12 Income Statement"
