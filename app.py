@@ -109,9 +109,11 @@ class T12SummaryFormatter(T12ReportFormatter):
         """Bold specific rows for summary report"""
         bold_font = Font(bold=True)
         # Adjust row numbers for after deletion of header rows
-        for row in [13, 17, 35, 37, 47]:  # Original: 21, 25, 43, 45, 55
+        # These are the correct total rows in the summary report
+        for row in [11, 13, 17, 35, 37, 47]:  # Net Rental Income, Total Rental Income, Total Income, Total Operating Expenses, NOI, Total Non-Op
             for col in range(1, 15):
-                self.ws.cell(row=row, column=col).font = bold_font
+                if row <= self.ws.max_row:
+                    self.ws.cell(row=row, column=col).font = bold_font
     
     def _delete_header_rows(self):
         """Delete header rows including row 60"""
@@ -126,83 +128,34 @@ class T12SummaryFormatter(T12ReportFormatter):
 class T12DetailFormatter(T12ReportFormatter):
     """Formatter for T12 Detail reports"""
     
-    def __init__(self, file_path):
-        super().__init__(file_path)
-        self.total_rows = []
-        self.section_header_rows = []
-        self.empty_rows_to_delete = []
-        self._analyze_report_structure()
-    
-    def _analyze_report_structure(self):
-        """Analyze the report to find totals, headers, and empty rows"""
-        for row in range(1, self.ws.max_row + 1):
-            cell_value = self.ws[f"A{row}"].value
-            
-            # Check if row has any numerical data
-            row_has_data = False
-            for col in range(2, 15):  # Check columns B through N
-                cell = self.ws.cell(row=row, column=col)
-                if cell.value is not None and str(cell.value).strip() != "":
-                    try:
-                        # Try to convert to float to check if it's numerical
-                        float(str(cell.value).replace(',', ''))
-                        row_has_data = True
-                        break
-                    except:
-                        pass
-            
-            if cell_value:
-                cell_str = str(cell_value).strip()
-                
-                # Find total rows (should be bolded)
-                if (cell_str.startswith("    Total ") or  # 4-space indent totals
-                    cell_str == "Net Operating Income" or
-                    cell_str == "    Net Rental Income"):
-                    self.total_rows.append(row)
-                
-                # Find section headers (2-space indent, no data)
-                elif cell_str.startswith("  ") and not cell_str.startswith("    ") and not row_has_data:
-                    self.section_header_rows.append(row)
-                
-                # Find empty label rows that should be deleted
-                elif row > 15 and not row_has_data and not cell_str.startswith("  "):
-                    # Skip if it's a blank separator row
-                    if cell_str != "":
-                        self.empty_rows_to_delete.append(row)
-    
-    def _unmerge_cells(self):
-        """Unmerge ALL cells in the worksheet"""
-        # Clear all merged cells, not just in header
-        for merged_range in list(self.ws.merged_cells.ranges):
-            self.ws.unmerge_cells(str(merged_range))
-    
-    def _delete_header_rows(self):
-        """Delete header rows and problematic empty rows"""
-        # First delete the standard header rows
-        super()._delete_header_rows()
-        
-        # Then delete additional empty rows (adjust for already deleted rows)
-        # Sort in reverse to avoid index shifting issues
-        adjusted_empty_rows = [row - 8 for row in self.empty_rows_to_delete if row > 11]
-        for row in sorted(adjusted_empty_rows, reverse=True):
-            if row > 0 and row <= self.ws.max_row:
-                self.ws.delete_rows(row)
-    
     def _bold_rows(self):
-        """Bold only the total rows, not section headers"""
+        """Bold specific total rows by searching for text"""
         bold_font = Font(bold=True)
         
-        # Calculate how many rows were deleted before each total row
-        rows_deleted = 8  # Standard header deletions
+        # Define the same rows that should be bolded as Summary
+        rows_to_bold = [
+            "Net Rental Income",
+            "Total Income",
+            "Total Operating Expenses",
+            "Net Operating Income",
+            "Total Non-Operating Expenses",
+            "Net Income"
+        ]
         
-        # Add count of empty rows deleted before each total
-        for total_row in self.total_rows:
-            empty_rows_before = len([r for r in self.empty_rows_to_delete if r < total_row and r > 11])
-            adjusted_row = total_row - rows_deleted - empty_rows_before
-            
-            if adjusted_row > 0 and adjusted_row <= self.ws.max_row:
-                for col in range(1, 15):
-                    self.ws.cell(row=adjusted_row, column=col).font = bold_font
+        # Search through the worksheet for these specific rows
+        for row in range(1, self.ws.max_row + 1):
+            cell_value = self.ws[f"A{row}"].value
+            if cell_value:
+                # Strip whitespace but keep the text as-is for comparison
+                cell_text = str(cell_value).strip()
+                
+                # Check if this row should be bolded
+                for target_text in rows_to_bold:
+                    if cell_text == target_text or cell_text.endswith(target_text):
+                        # Bold the entire row
+                        for col in range(1, 15):
+                            self.ws.cell(row=row, column=col).font = bold_font
+                        break
     
     def _get_report_type_suffix(self):
         return "T12 Income Statement"
@@ -242,11 +195,6 @@ with col1:
         f"Upload your T12 {report_type.title()} Excel file", 
         type=["xlsx"]
     )
-    
-    if report_type == "summary":
-        st.info("**Summary Report:** Standard T12 with fixed sections")
-    else:
-        st.info("**Detail Report:** Includes line-item details with dynamic sections")
 
 with col2:
     st.subheader("Formatting Steps")
@@ -267,11 +215,11 @@ with col2:
     else:
         st.markdown("""
         **Detail Report Formatting:**
-        1. ✓ Unmerge ALL cells
+        1. ✓ Unmerge header cells
         2. ✓ Align property info left
         3. ✓ Set column widths to 12px
-        4. ✓ **Dynamically bold only "Total" rows**
-        5. ✓ Delete header rows & empty data rows
+        4. ✓ **Dynamically bold all "Total" rows**
+        5. ✓ Delete standard header rows
         6. ✓ Freeze pane at B6
         7. ✓ Set row heights
         8. ✓ Hide gridlines
