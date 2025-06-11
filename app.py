@@ -44,8 +44,7 @@ class T12ReportFormatter(ABC):
     def _set_column_widths(self):
         """Set Column Widths B–N to 12 pixels"""
         for col in range(2, 15):
-            # Excel width units: 12 pixels = approximately 1.71 character units
-            self.ws.column_dimensions[get_column_letter(col)].width = 1.71
+            self.ws.column_dimensions[get_column_letter(col)].width = 12
     
     @abstractmethod
     def _bold_rows(self):
@@ -243,6 +242,11 @@ with col1:
         f"Upload your T12 {report_type.title()} Excel file", 
         type=["xlsx"]
     )
+    
+    if report_type == "summary":
+        st.info("**Summary Report:** Standard T12 with fixed sections")
+    else:
+        st.info("**Detail Report:** Includes line-item details with dynamic sections")
 
 with col2:
     st.subheader("Formatting Steps")
