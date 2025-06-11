@@ -23,8 +23,8 @@ class T12ReportFormatter(ABC):
         self._unmerge_cells()
         self._align_header_cells()
         self._set_column_widths()
-        self._bold_rows()
-        self._delete_header_rows()
+        self._delete_header_rows()  # Delete rows BEFORE bolding
+        self._bold_rows()           # Bold AFTER deletion
         self._freeze_panes()
         self._set_row_heights()
         self._hide_gridlines()
