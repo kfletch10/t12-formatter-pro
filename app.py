@@ -220,9 +220,9 @@ def format_report(file_path, report_type):
     return formatter.format()
 
 # Streamlit UI
-st.set_page_config(page_title="T12 Report Formatter", page_icon="✅", layout="wide")
+st.set_page_config(page_title="T12 Report Formatter", page_icon="📊", layout="wide")
 
-st.title("T12 Report Formatter")
+st.title("📊 T12 Report Formatter")
 st.write("Format T12 Summary and Detail reports for multifamily properties")
 
 # Create two columns for the interface
