@@ -36,19 +36,50 @@ class T12ReportFormatter(ABC):
                 self.ws.unmerge_cells(str(merged_range))
     
     def _align_header_cells(self):
-        """Align left cells A6-A8"""
-        for row in range(6, 9):
-            self.ws[f"A{row}"].alignment = Alignment(horizontal='left')
+        """Align left cells based on format"""
+        format_type = self._detect_header_format()
+        
+        if format_type == "standard":
+            # Standard format: align A6-A8
+            for row in range(6, 9):
+                self.ws[f"A{row}"].alignment = Alignment(horizontal='left')
+        else:
+            # Alternate format: align A1-A3
+            for row in range(1, 4):
+                self.ws[f"A{row}"].alignment = Alignment(horizontal='left')
     
     def _set_column_widths(self):
         """Set Column Widths B–N to 12 pixels"""
         for col in range(2, 15):
             self.ws.column_dimensions[get_column_letter(col)].width = 12
     
+    def _detect_header_format(self):
+        """Detect which header format the file uses"""
+        # Check if row 1 has the property name (alternate format)
+        # or if it's empty/location info (standard format)
+        cell_a1 = self.ws["A1"].value
+        cell_a3 = self.ws["A3"].value
+        
+        # Standard format has empty rows or "Location:" in first rows
+        if (not cell_a1 or 
+            str(cell_a1).strip() == "" or 
+            "Location:" in str(cell_a3) if cell_a3 else False):
+            return "standard"
+        else:
+            return "alternate"
+    
     def _delete_header_rows(self):
-        """Delete standard header rows"""
-        for row in sorted([1, 2, 3, 4, 5, 9, 10, 11], reverse=True):
-            self.ws.delete_rows(row)
+        """Delete header rows based on detected format"""
+        format_type = self._detect_header_format()
+        
+        if format_type == "standard":
+            # Standard format: delete rows 1,2,3,4,5,9,10,11
+            for row in sorted([1, 2, 3, 4, 5, 9, 10, 11], reverse=True):
+                self.ws.delete_rows(row)
+        else:
+            # Alternate format: delete rows 4,5,6
+            for row in sorted([4, 5, 6], reverse=True):
+                self.ws.delete_rows(row)
     
     def _freeze_panes(self):
         """Freeze pane at B6 (after row deletion)"""
@@ -157,26 +188,28 @@ with col2:
     if report_type == "summary":
         st.markdown("""
         **Summary Report Formatting:**
-        1. ✓ Unmerge header cells
-        2. ✓ Align property info left
-        3. ✓ Set column widths to 12px
-        4. ✓ Delete header rows & row 60
-        5. ✓ Freeze pane at B6
-        6. ✓ Set row heights
-        7. ✓ Hide gridlines
-        8. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
+        1. ✓ Auto-detect header format (standard or alternate)
+        2. ✓ Unmerge header cells
+        3. ✓ Align property info left
+        4. ✓ Set column widths to 12px
+        5. ✓ Delete appropriate header rows & row 60
+        6. ✓ Freeze pane at B6
+        7. ✓ Set row heights
+        8. ✓ Hide gridlines
+        9. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
         """)
     else:
         st.markdown("""
         **Detail Report Formatting:**
-        1. ✓ Unmerge header cells
-        2. ✓ Align property info left
-        3. ✓ Set column widths to 12px
-        4. ✓ Delete standard header rows
-        5. ✓ Freeze pane at B6
-        6. ✓ Set row heights
-        7. ✓ Hide gridlines
-        8. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
+        1. ✓ Auto-detect header format (standard or alternate)
+        2. ✓ Unmerge header cells
+        3. ✓ Align property info left
+        4. ✓ Set column widths to 12px
+        5. ✓ Delete appropriate header rows
+        6. ✓ Freeze pane at B6
+        7. ✓ Set row heights
+        8. ✓ Hide gridlines
+        9. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
         """)
 
 # Process file if uploaded
