@@ -17,6 +17,7 @@ class T12ReportFormatter(ABC):
     def __init__(self, file_path):
         self.wb = load_workbook(file_path)
         self.ws = self.wb.active
+        self.header_format = self._detect_header_format()
         
     def format(self):
         """Main formatting method that calls all formatting steps"""
@@ -29,6 +30,18 @@ class T12ReportFormatter(ABC):
         self._hide_gridlines()
         return self._save_output()
     
+    def _detect_header_format(self):
+        """Detect which header format the file uses"""
+        # Check row 3 specifically
+        cell_a3 = self.ws["A3"].value
+        
+        # Standard format has "Location:" in row 3
+        # Alternate format has the date in row 3
+        if cell_a3 and "Location:" in str(cell_a3):
+            return "standard"
+        else:
+            return "alternate"
+    
     def _unmerge_cells(self):
         """Unmerge cells in the header area"""
         for merged_range in list(self.ws.merged_cells.ranges):
@@ -37,9 +50,7 @@ class T12ReportFormatter(ABC):
     
     def _align_header_cells(self):
         """Align left cells based on format"""
-        format_type = self._detect_header_format()
-        
-        if format_type == "standard":
+        if self.header_format == "standard":
             # Standard format: align A6-A8
             for row in range(6, 9):
                 self.ws[f"A{row}"].alignment = Alignment(horizontal='left')
@@ -53,26 +64,9 @@ class T12ReportFormatter(ABC):
         for col in range(2, 15):
             self.ws.column_dimensions[get_column_letter(col)].width = 12
     
-    def _detect_header_format(self):
-        """Detect which header format the file uses"""
-        # Check if row 1 has the property name (alternate format)
-        # or if it's empty/location info (standard format)
-        cell_a1 = self.ws["A1"].value
-        cell_a3 = self.ws["A3"].value
-        
-        # Standard format has empty rows or "Location:" in first rows
-        if (not cell_a1 or 
-            str(cell_a1).strip() == "" or 
-            "Location:" in str(cell_a3) if cell_a3 else False):
-            return "standard"
-        else:
-            return "alternate"
-    
     def _delete_header_rows(self):
         """Delete header rows based on detected format"""
-        format_type = self._detect_header_format()
-        
-        if format_type == "standard":
+        if self.header_format == "standard":
             # Standard format: delete rows 1,2,3,4,5,9,10,11
             for row in sorted([1, 2, 3, 4, 5, 9, 10, 11], reverse=True):
                 self.ws.delete_rows(row)
