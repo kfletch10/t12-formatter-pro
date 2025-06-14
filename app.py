@@ -71,13 +71,22 @@ class T12ReportFormatter(ABC):
             for row in sorted([1, 2, 3, 4, 5, 9, 10, 11], reverse=True):
                 self.ws.delete_rows(row)
         else:
-            # Alternate format: delete rows 4,5,6
-            for row in sorted([4, 5, 6], reverse=True):
+            # Alternate format: delete rows 4,5,6,7,8,9,10
+            # (Reporting Book, As of Date, Location, and empty rows)
+            for row in sorted([4, 5, 6, 7, 8, 9, 10], reverse=True):
                 self.ws.delete_rows(row)
+        
+        # Delete "Created on:" footer row if it exists
+        for row in range(self.ws.max_row, max(1, self.ws.max_row - 10), -1):
+            cell_value = self.ws[f"A{row}"].value
+            if cell_value and "Created on:" in str(cell_value):
+                self.ws.delete_rows(row)
+                break
     
     def _freeze_panes(self):
         """Freeze pane at B6 (after row deletion)"""
-        self.ws.freeze_panes = "B6"
+        # Ensure we're setting it correctly for openpyxl
+        self.ws.freeze_panes = self.ws['B6']
     
     def _set_row_heights(self):
         """Set row heights for header rows"""
@@ -125,11 +134,19 @@ class T12SummaryFormatter(T12ReportFormatter):
     """Formatter for T12 Summary reports"""
     
     def _delete_header_rows(self):
-        """Delete header rows including row 60"""
+        """Delete header rows including row 60 if it exists"""
         super()._delete_header_rows()
-        # Delete row 60 (which becomes row 52 after initial deletions)
-        if self.ws.max_row >= 52:
-            self.ws.delete_rows(52)
+        
+        # For standard format, after deleting 8 rows, original row 60 becomes row 52
+        # For alternate format, after deleting 7 rows, original row 60 becomes row 53
+        if self.header_format == "standard" and self.ws.max_row >= 52:
+            # Check if row 52 is empty or contains unwanted data
+            if not any(self.ws.cell(row=52, column=col).value for col in range(1, 15)):
+                self.ws.delete_rows(52)
+        elif self.header_format == "alternate" and self.ws.max_row >= 53:
+            # Check if row 53 is empty or contains unwanted data
+            if not any(self.ws.cell(row=53, column=col).value for col in range(1, 15)):
+                self.ws.delete_rows(53)
     
     def _get_report_type_suffix(self):
         return "T12 Summary"
@@ -187,10 +204,11 @@ with col2:
         3. ✓ Align property info left
         4. ✓ Set column widths to 12px
         5. ✓ Delete appropriate header rows & row 60
-        6. ✓ Freeze pane at B6
-        7. ✓ Set row heights
-        8. ✓ Hide gridlines
-        9. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
+        6. ✓ Delete "Created on:" footer row
+        7. ✓ Freeze pane at B6
+        8. ✓ Set row heights
+        9. ✓ Hide gridlines
+        10. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
         """)
     else:
         st.markdown("""
@@ -200,10 +218,11 @@ with col2:
         3. ✓ Align property info left
         4. ✓ Set column widths to 12px
         5. ✓ Delete appropriate header rows
-        6. ✓ Freeze pane at B6
-        7. ✓ Set row heights
-        8. ✓ Hide gridlines
-        9. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
+        6. ✓ Delete "Created on:" footer row
+        7. ✓ Freeze pane at B6
+        8. ✓ Set row heights
+        9. ✓ Hide gridlines
+        10. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
         """)
 
 # Process file if uploaded
