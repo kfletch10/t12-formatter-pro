@@ -71,9 +71,9 @@ class T12ReportFormatter(ABC):
             for row in sorted([1, 2, 3, 4, 5, 9, 10, 11], reverse=True):
                 self.ws.delete_rows(row)
         else:
-            # Alternate format: delete rows 4,5,6,7,8,9,10
-            # (Reporting Book, As of Date, Location, and empty rows)
-            for row in sorted([4, 5, 6, 7, 8, 9, 10], reverse=True):
+            # Alternate format: delete rows 4,5,6,7,8,9 (keep row 10 as blank separator)
+            # This removes: Reporting Book, As of Date, Location, and 3 empty rows
+            for row in sorted([4, 5, 6, 7, 8, 9], reverse=True):
                 self.ws.delete_rows(row)
         
         # Delete "Created on:" footer row if it exists
@@ -138,15 +138,15 @@ class T12SummaryFormatter(T12ReportFormatter):
         super()._delete_header_rows()
         
         # For standard format, after deleting 8 rows, original row 60 becomes row 52
-        # For alternate format, after deleting 7 rows, original row 60 becomes row 53
+        # For alternate format, after deleting 6 rows, original row 60 becomes row 54
         if self.header_format == "standard" and self.ws.max_row >= 52:
             # Check if row 52 is empty or contains unwanted data
             if not any(self.ws.cell(row=52, column=col).value for col in range(1, 15)):
                 self.ws.delete_rows(52)
-        elif self.header_format == "alternate" and self.ws.max_row >= 53:
-            # Check if row 53 is empty or contains unwanted data
-            if not any(self.ws.cell(row=53, column=col).value for col in range(1, 15)):
-                self.ws.delete_rows(53)
+        elif self.header_format == "alternate" and self.ws.max_row >= 54:
+            # Check if row 54 is empty or contains unwanted data
+            if not any(self.ws.cell(row=54, column=col).value for col in range(1, 15)):
+                self.ws.delete_rows(54)
     
     def _get_report_type_suffix(self):
         return "T12 Summary"
