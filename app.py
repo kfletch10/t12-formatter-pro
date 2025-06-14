@@ -23,8 +23,7 @@ class T12ReportFormatter(ABC):
         self._unmerge_cells()
         self._align_header_cells()
         self._set_column_widths()
-        self._delete_header_rows()  # Delete rows BEFORE bolding
-        self._bold_rows()           # Bold AFTER deletion
+        self._delete_header_rows()
         self._freeze_panes()
         self._set_row_heights()
         self._hide_gridlines()
@@ -128,33 +127,6 @@ class T12SummaryFormatter(T12ReportFormatter):
 class T12DetailFormatter(T12ReportFormatter):
     """Formatter for T12 Detail reports"""
     
-    def _bold_rows(self):
-        """Bold specific total rows by searching for text"""
-        bold_font = Font(bold=True)
-        
-        # Define the exact rows that should be bolded (same as Summary)
-        rows_to_bold = [
-            "Net Rental Income",
-            "Total Income",
-            "Total Operating Expenses",
-            "Net Operating Income",
-            "Total Non-Operating Expenses",
-            "Net Income"
-        ]
-        
-        # Search through the worksheet for these specific rows
-        for row in range(1, self.ws.max_row + 1):
-            cell_value = self.ws[f"A{row}"].value
-            if cell_value:
-                # Strip all leading/trailing whitespace for comparison
-                cell_text = str(cell_value).strip()
-                
-                # Check if this row should be bolded - must be exact match
-                if cell_text in rows_to_bold:
-                    # Bold the entire row
-                    for col in range(1, 15):
-                        self.ws.cell(row=row, column=col).font = bold_font
-    
     def _get_report_type_suffix(self):
         return "T12 Income Statement"
 
@@ -203,12 +175,11 @@ with col2:
         1. ✓ Unmerge header cells
         2. ✓ Align property info left
         3. ✓ Set column widths to 12px
-        4. ✓ Bold totals rows (21, 25, 43, 45, 55)
-        5. ✓ Delete header rows & row 60
-        6. ✓ Freeze pane at B6
-        7. ✓ Set row heights
-        8. ✓ Hide gridlines
-        9. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
+        4. ✓ Delete header rows & row 60
+        5. ✓ Freeze pane at B6
+        6. ✓ Set row heights
+        7. ✓ Hide gridlines
+        8. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
         """)
     else:
         st.markdown("""
@@ -216,12 +187,11 @@ with col2:
         1. ✓ Unmerge header cells
         2. ✓ Align property info left
         3. ✓ Set column widths to 12px
-        4. ✓ **Dynamically bold all "Total" rows**
-        5. ✓ Delete standard header rows
-        6. ✓ Freeze pane at B6
-        7. ✓ Set row heights
-        8. ✓ Hide gridlines
-        9. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
+        4. ✓ Delete standard header rows
+        5. ✓ Freeze pane at B6
+        6. ✓ Set row heights
+        7. ✓ Hide gridlines
+        8. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
         """)
 
 # Process file if uploaded
