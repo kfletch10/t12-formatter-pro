@@ -45,11 +45,6 @@ class T12ReportFormatter(ABC):
         for col in range(2, 15):
             self.ws.column_dimensions[get_column_letter(col)].width = 12
     
-    @abstractmethod
-    def _bold_rows(self):
-        """Bold specific rows - must be implemented by subclasses"""
-        pass
-    
     def _delete_header_rows(self):
         """Delete standard header rows"""
         for row in sorted([1, 2, 3, 4, 5, 9, 10, 11], reverse=True):
@@ -103,16 +98,6 @@ class T12ReportFormatter(ABC):
 
 class T12SummaryFormatter(T12ReportFormatter):
     """Formatter for T12 Summary reports"""
-    
-    def _bold_rows(self):
-        """Bold specific rows for summary report"""
-        bold_font = Font(bold=True)
-        # Adjust row numbers for after deletion of header rows
-        # These are the correct total rows in the summary report
-        for row in [11, 13, 17, 35, 37, 47]:  # Net Rental Income, Total Rental Income, Total Income, Total Operating Expenses, NOI, Total Non-Op
-            for col in range(1, 15):
-                if row <= self.ws.max_row:
-                    self.ws.cell(row=row, column=col).font = bold_font
     
     def _delete_header_rows(self):
         """Delete header rows including row 60"""
