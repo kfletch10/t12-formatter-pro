@@ -140,13 +140,8 @@ class T12SummaryFormatter(T12ReportFormatter):
         """Delete header rows including row 60 if it exists"""
         super()._delete_header_rows()
         
-        # Original row 60 position after deletions:
-        # Standard format: deleted 8 rows, so row 60 → row 52
-        # Alternate format: deleted 4 rows, so row 60 → row 56
-        if self.header_format == "standard" and self.ws.max_row >= 52:
-            if not any(self.ws.cell(row=52, column=col).value for col in range(1, 15)):
-                self.ws.delete_rows(52)
-        elif self.header_format == "alternate" and self.ws.max_row >= 56:
+        # After deleting 4 rows, original row 60 becomes row 56
+        if self.ws.max_row >= 56:
             if not any(self.ws.cell(row=56, column=col).value for col in range(1, 15)):
                 self.ws.delete_rows(56)
     
@@ -155,6 +150,12 @@ class T12SummaryFormatter(T12ReportFormatter):
 
 class T12DetailFormatter(T12ReportFormatter):
     """Formatter for T12 Detail reports"""
+    
+    def _unmerge_cells(self):
+        """Unmerge ALL cells in the entire worksheet for detail reports"""
+        # Detail reports have merged cells throughout, not just in header
+        for merged_range in list(self.ws.merged_cells.ranges):
+            self.ws.unmerge_cells(str(merged_range))
     
     def _get_report_type_suffix(self):
         return "T12 Income Statement"
@@ -201,30 +202,28 @@ with col2:
     if report_type == "summary":
         st.markdown("""
         **Summary Report Formatting:**
-        1. ✓ Auto-detect header format (standard or alternate)
-        2. ✓ Unmerge header cells
-        3. ✓ Align property info left
-        4. ✓ Set column widths to 12px
-        5. ✓ Delete appropriate header rows & row 60
-        6. ✓ Delete "Created on:" footer row
-        7. ✓ Freeze pane at B6
-        8. ✓ Set row heights
-        9. ✓ Hide gridlines
-        10. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
+        1. ✓ Unmerge header cells
+        2. ✓ Align property info left (A1-A3)
+        3. ✓ Set column widths to 12px
+        4. ✓ Delete rows 4-6, 10 & row 60
+        5. ✓ Delete "Created on:" footer row
+        6. ✓ Freeze pane at B6
+        7. ✓ Set row heights
+        8. ✓ Hide gridlines
+        9. ✓ Save as: `PropertyName_T12 Summary_YYYY-MM.xlsx`
         """)
     else:
         st.markdown("""
         **Detail Report Formatting:**
-        1. ✓ Auto-detect header format (standard or alternate)
-        2. ✓ Unmerge header cells
-        3. ✓ Align property info left
-        4. ✓ Set column widths to 12px
-        5. ✓ Delete appropriate header rows
-        6. ✓ Delete "Created on:" footer row
-        7. ✓ Freeze pane at B6
-        8. ✓ Set row heights
-        9. ✓ Hide gridlines
-        10. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
+        1. ✓ Unmerge ALL cells (entire document)
+        2. ✓ Align property info left (A1-A3)
+        3. ✓ Set column widths to 12px
+        4. ✓ Delete rows 4-6, 10
+        5. ✓ Delete "Created on:" footer row
+        6. ✓ Freeze pane at B6
+        7. ✓ Set row heights
+        8. ✓ Hide gridlines
+        9. ✓ Save as: `PropertyName_T12 Income Statement_YYYY-MM.xlsx`
         """)
 
 # Process file if uploaded
